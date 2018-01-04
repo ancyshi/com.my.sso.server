@@ -1,9 +1,7 @@
 package com.my.util;
 
-import java.util.UUID;
 
 public class TokenUtil {
-	String token = UUID.randomUUID().toString();
 
 	// 存储临时令牌到redis中，存活期60秒
 	public static void setToken(String tokenId, TokenInfo tokenInfo) {
