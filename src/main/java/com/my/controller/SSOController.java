@@ -2,6 +2,9 @@ package com.my.controller;
 
 import java.util.UUID;
 
+import javax.annotation.Resource;
+
+import org.codehaus.plexus.util.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -9,13 +12,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.my.model.User;
+import com.my.dao.UsersJPA;
+import com.my.model.Users;
 import com.my.util.TokenInfo;
 import com.my.util.TokenUtil;
 
 @RestController
 @RequestMapping(value = "/sso")
 public class SSOController {
+	
+	@Resource
+	private UsersJPA usersJPA;
+	
 	String token = UUID.randomUUID().toString();
 
 	/*
@@ -27,49 +35,64 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login")
-	public Long pageLogin(JSONObject request) throws Exception {
+	public void pageLogin(JSONObject request) throws Exception {
 		// 1.判定用户是否登录
-		if (request.getJSONObject("user") == null) {
-			// 显示登录界面
+		if (request.getJSONObject("globalsessionid") == null) {
+			// 显示登录界面，重定向到登陆界面，输入用户名和密码
 		}
-		User user = JSON.toJavaObject(request.getJSONObject("user"), User.class);
+//		User user = JSON.toJavaObject(request.getJSONObject("user"), User.class);
+		
 		// 1.2 如果已经登录，则产生临时令牌token
-
+		Users user = usersJPA.findByUserNameAndPassWord(request.getString("userName"),request.getString("passWord"));
+		
+		if (user == null) {
+			// 没有注册过的用户，显示注册界面
+		}
+		
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalId("feaef");
-		tokenInfo.setUserId(2);
-		tokenInfo.setUsername("张三");
+		tokenInfo.setUserId(user.getId());
+		tokenInfo.setUsername(user.getUserName());
 		tokenInfo.setSsoClient("ef");
 		TokenUtil.setToken(token, tokenInfo);
 
 		// 1.3 判定是否有returnURL,有的话就重定向回应用系统，没有就显示主页面
+		if (!StringUtils.isEmpty(request.getString("returnURL"))) {
+			// 重定向到应用系统
+		} else {
+			// 重定向到登陆页面
+		}
 
-		return null;
 	}
 
 	/*
 	 * 说明： 处理浏览器用户登录认证请求。如带有returnURL参数，认证通过后，将产生临时认证令牌token，并携带此token重定向回系统。
 	 * 如没有带returnURL参数
 	 * ，说明用户是直接从认证中心发起的登录请求，认证通过后，返回认证中心首页提示用户已登录。上面登录时序交互图中的3和此接口有关。
+	 * 
+	 * 
+	 * 这里假设每个页面都带有returnURL,如果是登陆页面发送的请求那么携带主页面的url，否则携带app页面的url
 	 */
+	// 用户输入用户名和密码后，点击取人，发送请求到这个接口
 	// 这个接口就是登陆界面发送请求的接口，判定是否携带returnURL，如果携带则重定向回去，否则直接登陆主界面
 	@RequestMapping(value = "/auth/login")
-	public void authLogin(JSONObject reqObj) throws Exception {
+	public void authLogin(JSONObject request) throws Exception {
 		// 1、认证用户
-		User user = new User();
-		user.setName("张三");
+		Users user = usersJPA.findByUserNameAndPassWord(request.getString("userName"),request.getString("passWord"));
+		
+		if (user == null) {
+			// 没有注册过的用户，显示注册界面
+		}
 
-		// 2、认证不通过就返回，并报错
-
-		// 3、认证通过，就产生临时的token
+		// 2、认证通过，就产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalId("feaef");
-		tokenInfo.setUserId(2);
-		tokenInfo.setUsername("张三");
+		tokenInfo.setUserId(user.getId());
+		tokenInfo.setUsername(user.getUserName());
 		tokenInfo.setSsoClient("ef");
 		TokenUtil.setToken(token, tokenInfo);
 
-		// 4、如果携带了returnURL,那么就重定向，否则返回主页面
+		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
 		redictToApp();
 	}
 
@@ -85,6 +108,7 @@ public class SSOController {
 	@RequestMapping(value = "/auth/verify")
 	public Long authVerify(JSONObject reqObj) throws Exception {
 		// 1、获取到token
+		
 
 		// 2、认证token是否有效
 
