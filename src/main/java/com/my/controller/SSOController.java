@@ -18,7 +18,7 @@ import com.my.util.TokenInfo;
 import com.my.util.TokenUtil;
 
 @RestController
-@RequestMapping(value = "/sso")
+@RequestMapping(value = "/server")
 public class SSOController {
 	
 	@Resource
@@ -35,13 +35,11 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login")
-	public void pageLogin(JSONObject request) throws Exception {
-		// 1.判定用户是否登录
-		if (request.getJSONObject("globalsessionid") == null) {
-			// 显示登录界面，重定向到登陆界面，输入用户名和密码
+	public String pageLogin(JSONObject request) throws Exception {
+		// 1.判定是否有GlobalSessionId并且合法
+		if (!checkSessionId(request)) {
+			// 显示登录界面
 		}
-//		User user = JSON.toJavaObject(request.getJSONObject("user"), User.class);
-		
 		// 1.2 如果已经登录，则产生临时令牌token
 		Users user = usersJPA.findByUserNameAndPassWord(request.getString("userName"),request.getString("passWord"));
 		
@@ -57,12 +55,18 @@ public class SSOController {
 		TokenUtil.setToken(token, tokenInfo);
 
 		// 1.3 判定是否有returnURL,有的话就重定向回应用系统，没有就显示主页面
-		if (!StringUtils.isEmpty(request.getString("returnURL"))) {
-			// 重定向到应用系统
-		} else {
-			// 重定向到登陆页面
+		if (request.getString("returnURL") != null) {
+			// 发送请求到/client/auth/check
 		}
+		return "/login";
+	}
 
+	private boolean checkSessionId(JSONObject request) {
+		String sessionId = request.getString("globalSession");
+		if (sessionId != null) {
+			// 校验sessionid是否合法
+		}
+		return false;
 	}
 
 	/*
@@ -106,11 +110,12 @@ public class SSOController {
 	 * 。上面登录时序交互图中的4和此接口有关。
 	 */
 	@RequestMapping(value = "/auth/verify")
-	public Long authVerify(JSONObject reqObj) throws Exception {
+	public String authVerify(JSONObject reqObj) throws Exception {
 		// 1、获取到token
-		
+		JSONObject token = reqObj.getJSONObject("token");
 
 		// 2、认证token是否有效
+		token.getString("userName");
 
 		// 3、有效，则返回用户的一些信息，并且声称全局的session
 		return null;
