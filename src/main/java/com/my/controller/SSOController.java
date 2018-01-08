@@ -3,6 +3,8 @@ package com.my.controller;
 import java.util.UUID;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.codehaus.plexus.util.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.my.dao.UsersJPA;
 import com.my.model.Users;
+import com.my.util.GlobalSessions;
 import com.my.util.TokenInfo;
 import com.my.util.TokenUtil;
 
@@ -38,19 +41,15 @@ public class SSOController {
 	public String pageLogin(JSONObject request) throws Exception {
 		// 1.判定是否有GlobalSessionId并且合法
 		if (!checkSessionId(request)) {
-			// 显示登录界面
+			return "/login";
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
-		Users user = usersJPA.findByUserNameAndPassWord(request.getString("userName"),request.getString("passWord"));
-		
-		if (user == null) {
-			// 没有注册过的用户，显示注册界面
-		}
+		HttpSession globalSession = GlobalSessions.getSession(request.getString("globalSession"));
 		
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalId("feaef");
-		tokenInfo.setUserId(user.getId());
-		tokenInfo.setUsername(user.getUserName());
+		tokenInfo.setUserId(Long.parseLong(globalSession.getId()));
+		tokenInfo.setUsername((String) globalSession.getAttribute("name"));
 		tokenInfo.setSsoClient("ef");
 		TokenUtil.setToken(token, tokenInfo);
 
@@ -58,13 +57,17 @@ public class SSOController {
 		if (request.getString("returnURL") != null) {
 			// 发送请求到/client/auth/check
 		}
-		return "/login";
+		return null;
 	}
 
 	private boolean checkSessionId(JSONObject request) {
 		String sessionId = request.getString("globalSession");
 		if (sessionId != null) {
 			// 校验sessionid是否合法
+			HttpSession httpSession = GlobalSessions.getSession(sessionId);
+			if (httpSession != null) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -80,15 +83,22 @@ public class SSOController {
 	// 用户输入用户名和密码后，点击取人，发送请求到这个接口
 	// 这个接口就是登陆界面发送请求的接口，判定是否携带returnURL，如果携带则重定向回去，否则直接登陆主界面
 	@RequestMapping(value = "/auth/login")
-	public void authLogin(JSONObject request) throws Exception {
+	public String authLogin(HttpServletRequest request) throws Exception {
 		// 1、认证用户
-		Users user = usersJPA.findByUserNameAndPassWord(request.getString("userName"),request.getString("passWord"));
+		Users user = usersJPA.findByUserNameAndPassWord((String)request.getAttribute("userName"),(String)request.getAttribute("passWord"));
 		
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
 		}
 
-		// 2、认证通过，就产生临时的token
+		// 2、认证通过，产生全局的sessionId
+		 HttpSession session = request.getSession(true);
+		 session.setAttribute("username",user.getUserName());
+		 session.setAttribute("password", user.getPassWord());
+		 
+		 GlobalSessions.addSession(session.getId(),session);
+		
+		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalId("feaef");
 		tokenInfo.setUserId(user.getId());
@@ -97,13 +107,9 @@ public class SSOController {
 		TokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		redictToApp();
+		return (String)request.getAttribute("returnURL");
 	}
 
-	private void redictToApp() {
-		// TODO Auto-generated method stub
-
-	}
 
 	/*
 	 * 说明：认证应用系统来的token是否有效，如有效，应用系统向认证中心注册，同时认证中心会返回该应用系统登录用户的相关信息，如ID,username等
@@ -121,38 +127,6 @@ public class SSOController {
 		return null;
 	}
 
-	private void redirectMethod() {
-		// 向认证中心发送验证token请求
-		String verifyURL = "http://" + server + PropertiesConfigUtil.getProperty("sso.server.verify");
-		HttpClient httpClient = new DefaultHttpClient();
-		// serverName作为本应用标识
-		HttpGet httpGet = new HttpGet(verifyURL + "?token=" + token + "&localId=" + request.getSession().getId());
-		try {
-			HttpResponse httpResponse = httpClient.execute(httpGet);
-			int statusCode = httpResponse.getStatusLine().getStatusCode();
-			if (statusCode == HttpStatus.SC_OK) {
-				String result = EntityUtils.toString(httpResponse.getEntity(), "utf-8");
-				// 解析json数据
-				ObjectMapper objectMapper = new ObjectMapper();
-				VerifyBean verifyResult = objectMapper.readValue(result, VerifyBean.class);
-				// 验证通过,应用返回浏览器需要验证的页面
-				if (verifyResult.getRet().equals("0")) {
-					Auth auth = new Auth();
-					auth.setUserId(verifyResult.getUserId());
-					auth.setUsername(verifyResult.getUsername());
-					auth.setGlobalId(verifyResult.getGlobalId());
-					request.getSession().setAttribute("auth", auth);
-					// 建立本地会话
-					return "redirect:http://" + returnURL;
-				}
-			}
-		} catch (Exception e) {
-			return "redirect:" + loginURL;
-		}
-
-		return null;
-
-	}
 
 	/*
 	 * 说明：登出接口处理两种情况，一是直接从认证中心登出，一是来自应用重定向的登出请求。这个根据gId来区分，无gId参数说明直接从认证中心注销，有，
