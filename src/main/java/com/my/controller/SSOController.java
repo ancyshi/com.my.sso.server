@@ -7,14 +7,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.codehaus.plexus.util.StringUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.my.dao.UsersJPA;
 import com.my.model.Users;
 import com.my.util.GlobalSessions;
@@ -25,10 +21,10 @@ import com.my.util.ToolsUtil;
 @RestController
 @RequestMapping(value = "/server")
 public class SSOController {
-	
+
 	@Resource
 	private UsersJPA usersJPA;
-	
+
 	String token = UUID.randomUUID().toString();
 
 	/*
@@ -40,34 +36,33 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login")
-	public Object pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public String pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
 		// 1.判定是否有GlobalSessionId并且合法
 		JSONObject resultObj = new JSONObject();
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
-		
-		if (null == globalSessionId ) {
+
+		if (null == globalSessionId) {
 			resultObj.put("returnUR", "/login");
-			return resultObj;
+			return "/login";
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
-		
+
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId("feaef");
 		tokenInfo.setUserId(Long.parseLong(globalSession.getId()));
 		tokenInfo.setUsername((String) globalSession.getAttribute("name"));
 		tokenInfo.setSsoClient("ef");
 		TokenUtil.setToken(token, tokenInfo);
-		
+
 		resultObj.put("tokenInfo", tokenInfo);
-		resultObj.put("returnURL",request.getAttribute("returnURL"));
-		
-		// 重定向取验证token
-		return resultObj;
+		resultObj.put("returnURL", request.getAttribute("returnURL"));
+
+		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo);
+		return globalSessionId;
 
 	}
-
-	
 
 	/*
 	 * 说明： 处理浏览器用户登录认证请求。如带有returnURL参数，认证通过后，将产生临时认证令牌token，并携带此token重定向回系统。
@@ -82,19 +77,20 @@ public class SSOController {
 	@RequestMapping(value = "/auth/login")
 	public String authLogin(HttpServletRequest request) throws Exception {
 		// 1、认证用户
-		Users user = usersJPA.findByUserNameAndPassWord((String)request.getAttribute("userName"),(String)request.getAttribute("passWord"));
-		
+		Users user = usersJPA.findByUserNameAndPassWord((String) request.getAttribute("userName"),
+				(String) request.getAttribute("passWord"));
+
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
 		}
 
 		// 2、认证通过，产生全局的sessionId
-		 HttpSession session = request.getSession(true);
-		 session.setAttribute("username",user.getUserName());
-		 session.setAttribute("password", user.getPassWord());
-		 
-		 GlobalSessions.addSession(session.getId(),session);
-		
+		HttpSession session = request.getSession(true);
+		session.setAttribute("username", user.getUserName());
+		session.setAttribute("password", user.getPassWord());
+
+		GlobalSessions.addSession(session.getId(), session);
+
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId("feaef");
@@ -104,16 +100,15 @@ public class SSOController {
 		TokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		return (String)request.getAttribute("returnURL");
+		return (String) request.getAttribute("returnURL");
 	}
-
 
 	/*
 	 * 说明：认证应用系统来的token是否有效，如有效，应用系统向认证中心注册，同时认证中心会返回该应用系统登录用户的相关信息，如ID,username等
 	 * 。上面登录时序交互图中的4和此接口有关。
 	 */
 	@RequestMapping(value = "/auth/verify")
-	public String authVerify(JSONObject reqObj) throws Exception {
+	public Object authVerify(JSONObject reqObj) throws Exception {
 		// 1、获取到token
 		JSONObject token = reqObj.getJSONObject("token");
 
@@ -123,7 +118,6 @@ public class SSOController {
 		// 3、有效，则返回用户的一些信息，并且声称全局的session
 		return null;
 	}
-
 
 	/*
 	 * 说明：登出接口处理两种情况，一是直接从认证中心登出，一是来自应用重定向的登出请求。这个根据gId来区分，无gId参数说明直接从认证中心注销，有，
