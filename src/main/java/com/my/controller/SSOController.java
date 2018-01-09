@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.codehaus.plexus.util.StringUtils;
@@ -19,6 +20,7 @@ import com.my.model.Users;
 import com.my.util.GlobalSessions;
 import com.my.util.TokenInfo;
 import com.my.util.TokenUtil;
+import com.my.util.ToolsUtil;
 
 @RestController
 @RequestMapping(value = "/server")
@@ -38,39 +40,34 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login")
-	public String pageLogin(JSONObject request) throws Exception {
+	public Object pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1.判定是否有GlobalSessionId并且合法
-		if (!checkSessionId(request)) {
-			return "/login";
+		JSONObject resultObj = new JSONObject();
+		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
+		
+		if (null == globalSessionId ) {
+			resultObj.put("returnUR", "/login");
+			return resultObj;
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
-		HttpSession globalSession = GlobalSessions.getSession(request.getString("globalSession"));
+		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
 		
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalId("feaef");
+		tokenInfo.setGlobalSessionId("feaef");
 		tokenInfo.setUserId(Long.parseLong(globalSession.getId()));
 		tokenInfo.setUsername((String) globalSession.getAttribute("name"));
 		tokenInfo.setSsoClient("ef");
 		TokenUtil.setToken(token, tokenInfo);
+		
+		resultObj.put("tokenInfo", tokenInfo);
+		resultObj.put("returnURL",request.getAttribute("returnURL"));
+		
+		// 重定向取验证token
+		return resultObj;
 
-		// 1.3 判定是否有returnURL,有的话就重定向回应用系统，没有就显示主页面
-		if (request.getString("returnURL") != null) {
-			// 发送请求到/client/auth/check
-		}
-		return null;
 	}
 
-	private boolean checkSessionId(JSONObject request) {
-		String sessionId = request.getString("globalSession");
-		if (sessionId != null) {
-			// 校验sessionid是否合法
-			HttpSession httpSession = GlobalSessions.getSession(sessionId);
-			if (httpSession != null) {
-				return true;
-			}
-		}
-		return false;
-	}
+	
 
 	/*
 	 * 说明： 处理浏览器用户登录认证请求。如带有returnURL参数，认证通过后，将产生临时认证令牌token，并携带此token重定向回系统。
@@ -100,7 +97,7 @@ public class SSOController {
 		
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalId("feaef");
+		tokenInfo.setGlobalSessionId("feaef");
 		tokenInfo.setUserId(user.getId());
 		tokenInfo.setUsername(user.getUserName());
 		tokenInfo.setSsoClient("ef");
