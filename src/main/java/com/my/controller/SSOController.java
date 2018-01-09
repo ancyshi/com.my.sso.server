@@ -60,7 +60,7 @@ public class SSOController {
 		resultObj.put("returnURL", request.getAttribute("returnURL"));
 
 		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo);
-		return globalSessionId;
+		return null;
 
 	}
 
@@ -112,11 +112,18 @@ public class SSOController {
 		// 1、获取到token
 		JSONObject token = reqObj.getJSONObject("token");
 
+		if (token == null) {
+			return false;
+		}
+
 		// 2、认证token是否有效
-		token.getString("userName");
+		String userName = token.getString("userName");
+		String passWord = token.getString("");
+
+		// 验证token是否有效
 
 		// 3、有效，则返回用户的一些信息，并且声称全局的session
-		return null;
+		return true;
 	}
 
 	/*
