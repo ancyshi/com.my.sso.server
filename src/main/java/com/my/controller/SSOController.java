@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -37,7 +38,7 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login")
-	public void pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		JSONObject resultObj = new JSONObject();
@@ -46,7 +47,11 @@ public class SSOController {
 		if (null == globalSessionId) {
 			// resultObj.put("returnUR", "/login");
 			// return "/login";
-			response.sendRedirect("http://localhost:8077/server/auth/login?returnURL=app1");
+			// response.sendRedirect("http://localhost:8077/server/auth/login?returnURL="
+			// + request.getParameter("returnURL"));
+			model.addAttribute("returnURL", request.getParameter("returnRUL"));
+			// 重定向之后会执行下面的语句，因此加个return
+			return "/login";
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
@@ -62,6 +67,7 @@ public class SSOController {
 		resultObj.put("returnURL", request.getAttribute("returnURL"));
 
 		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo);
+		return null;
 
 	}
 
@@ -76,13 +82,10 @@ public class SSOController {
 	// 用户输入用户名和密码后，点击取人，发送请求到这个接口
 	// 这个接口就是登陆界面发送请求的接口，判定是否携带returnURL，如果携带则重定向回去，否则直接登陆主界面
 	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
-	public String authLogin(HttpServletRequest request) throws Exception {
+	public String authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1、认证用户
-		if (request.getAttribute("userName") == null) {
-			return "/login";
-		}
-		Users user = usersJPA.findByUserNameAndPassWord((String) request.getAttribute("userName"),
-				(String) request.getAttribute("passWord"));
+		Users user = usersJPA.findByUserNameAndPassWord((String) request.getParameter("userName"),
+				(String) request.getParameter("passWord"));
 
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
@@ -104,7 +107,9 @@ public class SSOController {
 		TokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		return (String) request.getAttribute("returnURL");
+		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo + "returnURL"
+				+ request.getParameter("returnURL"));
+		return null;
 	}
 
 	/*
