@@ -8,11 +8,14 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.springframework.beans.factory.annotation.Value;
 
 @Entity
 @Table(name = "users")
 public class Users implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2705100612345452869L;
 	@Id
 	@GeneratedValue
 	@Column(name = "id")
@@ -21,6 +24,7 @@ public class Users implements Serializable{
 	private String userName;
 	@Column(name = "pass_word")
 	private String passWord;
+	
 	public Long getId() {
 		return id;
 	}

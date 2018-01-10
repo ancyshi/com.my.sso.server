@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,7 +19,7 @@ import com.my.util.TokenInfo;
 import com.my.util.TokenUtil;
 import com.my.util.ToolsUtil;
 
-@RestController
+@Controller
 @RequestMapping(value = "/server")
 public class SSOController {
 
@@ -36,15 +37,16 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login")
-	public String pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public void pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		JSONObject resultObj = new JSONObject();
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 
 		if (null == globalSessionId) {
-			resultObj.put("returnUR", "/login");
-			return "/login";
+//			resultObj.put("returnUR", "/login");
+//			return "/login";
+			response.sendRedirect("http://localhost:8077/server/auth/login?returnURL=app1");
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
@@ -60,7 +62,6 @@ public class SSOController {
 		resultObj.put("returnURL", request.getAttribute("returnURL"));
 
 		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo);
-		return null;
 
 	}
 
@@ -77,6 +78,9 @@ public class SSOController {
 	@RequestMapping(value = "/auth/login")
 	public String authLogin(HttpServletRequest request) throws Exception {
 		// 1、认证用户
+		if (request.getAttribute("userName") == null) {
+			return "/login";
+		}
 		Users user = usersJPA.findByUserNameAndPassWord((String) request.getAttribute("userName"),
 				(String) request.getAttribute("passWord"));
 
