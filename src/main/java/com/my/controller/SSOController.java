@@ -9,7 +9,7 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.alibaba.fastjson.JSONObject;
 import com.my.dao.UsersJPA;
@@ -44,8 +44,8 @@ public class SSOController {
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 
 		if (null == globalSessionId) {
-//			resultObj.put("returnUR", "/login");
-//			return "/login";
+			// resultObj.put("returnUR", "/login");
+			// return "/login";
 			response.sendRedirect("http://localhost:8077/server/auth/login?returnURL=app1");
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
@@ -75,7 +75,7 @@ public class SSOController {
 	 */
 	// 用户输入用户名和密码后，点击取人，发送请求到这个接口
 	// 这个接口就是登陆界面发送请求的接口，判定是否携带returnURL，如果携带则重定向回去，否则直接登陆主界面
-	@RequestMapping(value = "/auth/login")
+	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
 	public String authLogin(HttpServletRequest request) throws Exception {
 		// 1、认证用户
 		if (request.getAttribute("userName") == null) {
