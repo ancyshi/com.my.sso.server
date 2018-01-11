@@ -37,7 +37,7 @@ public class SSOController {
 	 * 
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
-	@RequestMapping(value = "/page/login")
+	@RequestMapping(value = "/page/login",method = RequestMethod.GET)
 	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
@@ -45,11 +45,7 @@ public class SSOController {
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 
 		if (null == globalSessionId) {
-			// resultObj.put("returnUR", "/login");
-			// return "/login";
-			// response.sendRedirect("http://localhost:8077/server/auth/login?returnURL="
-			// + request.getParameter("returnURL"));
-			model.addAttribute("returnURL", request.getParameter("returnRUL"));
+//			model.addAttribute("returnURL", request.getParameter("returnRUL"));
 			// 重定向之后会执行下面的语句，因此加个return
 			return "/login";
 		}
@@ -84,7 +80,7 @@ public class SSOController {
 	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
 	public String authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1、认证用户
-		Users user = usersJPA.findByUserNameAndPassWord((String) request.getParameter("userName"),
+		Users user = usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
 				(String) request.getParameter("passWord"));
 
 		if (user == null) {
@@ -100,14 +96,14 @@ public class SSOController {
 
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalSessionId("feaef");
+		tokenInfo.setGlobalSessionId(session.getId());
 		tokenInfo.setUserId(user.getId());
 		tokenInfo.setUsername(user.getUserName());
 		tokenInfo.setSsoClient("ef");
 		TokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo + "returnURL"
+		response.sendRedirect("http://localhost:8078/client/auth/check?token=" + token + "returnURL"
 				+ request.getParameter("returnURL"));
 		return null;
 	}
