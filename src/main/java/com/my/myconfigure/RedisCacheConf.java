@@ -26,14 +26,14 @@ public class RedisCacheConf extends CachingConfigurerSupport {
 	public CacheManager cacheManager() {
 		log.info("初始化CacheManager");
 		RedisCacheManager cacheManager = new RedisCacheManager(redisTemplate);
+		cacheManager.setDefaultExpiration(60);
 		// Map<String, Long> expires = new HashMap<>();
-		// expires.put("cache:user", 36000L);
+		// expires.put("tokenInfo", 36000L);
 		// cacheManager.setExpires(expires);
-		// 设置缓存过期时间
+		// // 设置缓存过期时间
 		// cacheManager.setDefaultExpiration(10000);
 		return cacheManager;
 	}
-
 	// /**
 	// * 生成key的策略
 	// 此方法将会根据类名+方法名+所有参数的值生成唯一的一个key,即使@Cacheable中的value属性一样，key也会不一样。
