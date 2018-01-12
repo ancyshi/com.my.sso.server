@@ -26,7 +26,7 @@ public class RedisCacheConf extends CachingConfigurerSupport {
 	public CacheManager cacheManager() {
 		log.info("初始化CacheManager");
 		RedisCacheManager cacheManager = new RedisCacheManager(redisTemplate);
-		cacheManager.setDefaultExpiration(60);
+		cacheManager.setDefaultExpiration(360);
 		// Map<String, Long> expires = new HashMap<>();
 		// expires.put("tokenInfo", 36000L);
 		// cacheManager.setExpires(expires);

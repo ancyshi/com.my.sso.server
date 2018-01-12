@@ -2,9 +2,12 @@ package com.my.util;
 
 import javax.annotation.Resource;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.alibaba.fastjson.JSON;
 import com.my.dao.TokenInfoJPA;
 import com.my.model.TokenInfo;
 
@@ -23,13 +26,15 @@ public class TokenUtil {
 	}
 
 	// 根据token键取TokenInfo
-	public TokenInfo getToken(String token) {
-
+	@Cacheable(key = "#tokenId", value = "default")
+	public String getToken(String tokenId, TokenInfo tokenInfo) {
+		TokenInfo token = tokenInfoJPA.findOne(tokenInfo.getUserId());
 		// 根据token去redis中查询tokenInfo
-		return null;
+		return JSON.toJSONString(token);
 	}
 
 	// 删除某个 token键值
+	@CacheEvict(key = "#tokenId", value = "default")
 	public void delToken(String tokenId) {
 	}
 

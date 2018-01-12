@@ -86,6 +86,10 @@ public class RedisConf {
 		redisTemplate.setConnectionFactory(factory);
 		redisTemplate.setKeySerializer(new StringRedisSerializer());
 		redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+		// redisTemplate.setHashValueSerializer(new
+		// JdkSerializationRedisSerializer());
+		// redisTemplate.setValueSerializer(new
+		// JdkSerializationRedisSerializer());
 		redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 		redisTemplate.setValueSerializer(new StringRedisSerializer());
 		redisTemplate.afterPropertiesSet();

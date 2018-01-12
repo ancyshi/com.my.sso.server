@@ -104,16 +104,18 @@ public class SSOController {
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(session.getId());
-		tokenInfo.setUserId(user.getId());
+		tokenInfo.setUserId(12L);
 		tokenInfo.setUserName(user.getUserName());
 		tokenInfo.setSsoClient("ef");
-		tokenUtil.setToken(token, tokenInfo);
+		// tokenUtil.setToken(token, tokenInfo);
+
+		String aString = tokenUtil.getToken("6d813fc4-ae76-4d1c-9f59-7e64e83a400c", tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
 		// response.sendRedirect("http://localhost:8078/client/auth/check?token="
 		// + token + "&returnURL"
 		// + request.getParameter("returnURL"));
-		return "/login";
+		return "a";
 	}
 
 	/*
