@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.alibaba.fastjson.JSONObject;
 import com.my.dao.UsersJPA;
+import com.my.model.TokenInfo;
 import com.my.model.Users;
 import com.my.util.GlobalSessions;
-import com.my.util.TokenInfo;
 import com.my.util.TokenUtil;
 import com.my.util.ToolsUtil;
 
@@ -26,6 +26,9 @@ public class SSOController {
 
 	@Resource
 	private UsersJPA usersJPA;
+	
+	@Resource
+	private TokenUtil tokenUtil;
 
 	String token = UUID.randomUUID().toString();
 
@@ -45,7 +48,6 @@ public class SSOController {
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 
 		if (null == globalSessionId) {
-//			model.addAttribute("returnURL", request.getParameter("returnRUL"));
 			// 重定向之后会执行下面的语句，因此加个return
 			return "/login";
 		}
@@ -55,9 +57,9 @@ public class SSOController {
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId("feaef");
 		tokenInfo.setUserId(Long.parseLong(globalSession.getId()));
-		tokenInfo.setUsername((String) globalSession.getAttribute("name"));
+		tokenInfo.setUserName((String) globalSession.getAttribute("name"));
 		tokenInfo.setSsoClient("ef");
-		TokenUtil.setToken(token, tokenInfo);
+		tokenUtil.setToken(token, tokenInfo);
 
 		resultObj.put("tokenInfo", tokenInfo);
 		resultObj.put("returnURL", request.getAttribute("returnURL"));
@@ -98,14 +100,14 @@ public class SSOController {
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(session.getId());
 		tokenInfo.setUserId(user.getId());
-		tokenInfo.setUsername(user.getUserName());
+		tokenInfo.setUserName(user.getUserName());
 		tokenInfo.setSsoClient("ef");
-		TokenUtil.setToken(token, tokenInfo);
+		tokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		response.sendRedirect("http://localhost:8078/client/auth/check?token=" + token + "returnURL"
-				+ request.getParameter("returnURL"));
-		return null;
+//		response.sendRedirect("http://localhost:8078/client/auth/check?token=" + token + "&returnURL"
+//				+ request.getParameter("returnURL"));
+		return "/login";
 	}
 
 	/*
@@ -113,17 +115,15 @@ public class SSOController {
 	 * 。上面登录时序交互图中的4和此接口有关。
 	 */
 	@RequestMapping(value = "/auth/verify")
-	public Object authVerify(JSONObject reqObj) throws Exception {
+	public Object authVerify( HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1、获取到token
-		JSONObject token = reqObj.getJSONObject("token");
+		String token = request.getParameter("token");
 
 		if (token == null) {
 			return false;
 		}
 
 		// 2、认证token是否有效
-		String userName = token.getString("userName");
-		String passWord = token.getString("");
 
 		// 验证token是否有效
 
