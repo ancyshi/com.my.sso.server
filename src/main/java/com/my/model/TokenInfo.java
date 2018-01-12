@@ -4,13 +4,13 @@ import java.io.Serializable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
 @Entity
 @Table(name = "token_info")
-public class TokenInfo implements Serializable  {
-	
+public class TokenInfo implements Serializable {
+
 	@Id
 	// id自动生成
 	@Column(name = "user_id")
@@ -19,7 +19,6 @@ public class TokenInfo implements Serializable  {
 	private String userName;
 	@Column(name = "sso_client")
 	private String ssoClient;
-
 	@Column(name = "global_sessionid")
 	private String globalSessionId;
 
@@ -57,11 +56,8 @@ public class TokenInfo implements Serializable  {
 
 	@Override
 	public String toString() {
-		return "{\"userId\":\"" + userId + "\",\"userName\":\"" + userName
-				+ "\",\"ssoClient\":\"" + ssoClient
+		return "{\"userId\":\"" + userId + "\",\"userName\":\"" + userName + "\",\"ssoClient\":\"" + ssoClient
 				+ "\",\"globalSessionId\":\"" + globalSessionId + "\"} ";
 	}
-	
-	
 
 }
