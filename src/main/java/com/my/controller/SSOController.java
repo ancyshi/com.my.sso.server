@@ -7,7 +7,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,15 +44,17 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login", method = RequestMethod.GET)
-	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public void pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		JSONObject resultObj = new JSONObject();
+		
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 
 		if (null == globalSessionId) {
 			// 重定向之后会执行下面的语句，因此加个return
-			return "/login";
+			response.sendRedirect("http://localhost:8078/client/auth/check");
+			return;
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
@@ -62,10 +67,10 @@ public class SSOController {
 		tokenUtil.setToken(token, tokenInfo);
 
 		resultObj.put("tokenInfo", tokenInfo);
-		resultObj.put("returnURL", request.getAttribute("returnURL"));
+		resultObj.put("returnURL", request.getParameter("returnURL"));
 
-		response.sendRedirect("http://localhost:8077/client/auth/check?tokenInfo=" + tokenInfo);
-		return null;
+		response.sendRedirect("http://localhost:8078/client/auth/check?tokenInfo=" + tokenInfo);
+		return;
 
 	}
 
@@ -80,15 +85,15 @@ public class SSOController {
 	// 用户输入用户名和密码后，点击取人，发送请求到这个接口
 	// 这个接口就是登陆界面发送请求的接口，判定是否携带returnURL，如果携带则重定向回去，否则直接登陆主界面
 	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
-	public String authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public void authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1、认证用户
-		// Users user =
-		// usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
-		// (String) request.getParameter("passWord"));
-		Users user = new Users();
-		user.setId(12l);
-		user.setPassWord("234");
-		user.setUserName("zhangsna");
+		 Users user =
+		 usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
+		 (String) request.getParameter("passWord"));
+//		Users user = new Users();
+//		user.setId(12l);
+//		user.setPassWord("234");
+//		user.setUserName("zhangsna");
 
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
@@ -104,18 +109,18 @@ public class SSOController {
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(session.getId());
-		tokenInfo.setUserId(12L);
+		tokenInfo.setUserId(user.getId());
 		tokenInfo.setUserName(user.getUserName());
 		tokenInfo.setSsoClient("ef");
-		// tokenUtil.setToken(token, tokenInfo);
+		tokenUtil.setToken(token, tokenInfo);
 
-		String aString = tokenUtil.getToken("6d813fc4-ae76-4d1c-9f59-7e64e83a400c", tokenInfo);
+//		String aString = tokenUtil.getToken("6d813fc4-ae76-4d1c-9f59-7e64e83a400c", tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		// response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		// + token + "&returnURL"
-		// + request.getParameter("returnURL"));
-		return "a";
+		 response.sendRedirect("http://localhost:8078/client/auth/check?token="
+		 + token + "&returnURL"
+		 + request.getParameter("returnURL"));
+		return;
 	}
 
 	/*
@@ -123,20 +128,19 @@ public class SSOController {
 	 * 。上面登录时序交互图中的4和此接口有关。
 	 */
 	@RequestMapping(value = "/auth/verify")
-	public Object authVerify(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public Object authVerify(@RequestBody JSONObject reqObj) throws Exception {
 		// 1、获取到token
-		String token = request.getParameter("token");
+		String token = reqObj.getString("token");
 
 		if (token == null) {
-			return false;
+			throw new Exception("没有收到token字段信息");
 		}
 
 		// 2、认证token是否有效
-
-		// 验证token是否有效
-
-		// 3、有效，则返回用户的一些信息，并且声称全局的session
-		return true;
+		
+		String tokenInfo = tokenUtil.getToken(token, null);
+		
+		return tokenInfo;
 	}
 
 	/*
