@@ -23,7 +23,7 @@ import com.my.util.GlobalSessions;
 import com.my.util.TokenUtil;
 import com.my.util.ToolsUtil;
 
-@RestController
+@Controller
 @RequestMapping(value = "/server")
 public class SSOController {
 
@@ -44,7 +44,7 @@ public class SSOController {
 	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
 	 */
 	@RequestMapping(value = "/page/login", method = RequestMethod.GET)
-	public void pageLogin(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		JSONObject resultObj = new JSONObject();
@@ -53,14 +53,14 @@ public class SSOController {
 
 		if (null == globalSessionId) {
 			// 重定向之后会执行下面的语句，因此加个return
-			response.sendRedirect("http://localhost:8078/client/auth/check");
-			return;
+			model.addAttribute("returnURL", request.getParameter("returnURL"));
+			return "/login";
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
 
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalSessionId("feaef");
+		tokenInfo.setGlobalSessionId(globalSessionId);
 		tokenInfo.setUserId(Long.parseLong(globalSession.getId()));
 		tokenInfo.setUserName((String) globalSession.getAttribute("name"));
 		tokenInfo.setSsoClient("ef");
@@ -70,7 +70,7 @@ public class SSOController {
 		resultObj.put("returnURL", request.getParameter("returnURL"));
 
 		response.sendRedirect("http://localhost:8078/client/auth/check?tokenInfo=" + tokenInfo);
-		return;
+		return null;
 
 	}
 
@@ -90,10 +90,6 @@ public class SSOController {
 		 Users user =
 		 usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
 		 (String) request.getParameter("passWord"));
-//		Users user = new Users();
-//		user.setId(12l);
-//		user.setPassWord("234");
-//		user.setUserName("zhangsna");
 
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
@@ -118,31 +114,12 @@ public class SSOController {
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
 		 response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		 + token + "&returnURL"
+		 + token + "&returnURL="
 		 + request.getParameter("returnURL"));
 		return;
 	}
 
-	/*
-	 * 说明：认证应用系统来的token是否有效，如有效，应用系统向认证中心注册，同时认证中心会返回该应用系统登录用户的相关信息，如ID,username等
-	 * 。上面登录时序交互图中的4和此接口有关。
-	 */
-	@RequestMapping(value = "/auth/verify")
-	public Object authVerify(@RequestBody JSONObject reqObj) throws Exception {
-		// 1、获取到token
-		String token = reqObj.getString("token");
-
-		if (token == null) {
-			throw new Exception("没有收到token字段信息");
-		}
-
-		// 2、认证token是否有效
-		
-		String tokenInfo = tokenUtil.getToken(token, null);
-		
-		return tokenInfo;
-	}
-
+	
 	/*
 	 * 说明：登出接口处理两种情况，一是直接从认证中心登出，一是来自应用重定向的登出请求。这个根据gId来区分，无gId参数说明直接从认证中心注销，有，
 	 * 说明从应用中来。接口首先取消当前全局登录会话，其次根据注册的已登录应用，通知它们进行登出操作。上面登出时序交互图中的2和4与此接口有关。
