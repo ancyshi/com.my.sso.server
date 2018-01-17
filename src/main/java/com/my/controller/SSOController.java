@@ -50,26 +50,28 @@ public class SSOController {
 		JSONObject resultObj = new JSONObject();
 		
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
+		
+		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
 
-		if (null == globalSessionId) {
+		if (null == globalSessionId || globalSession == null) {
 			// 重定向之后会执行下面的语句，因此加个return
 			model.addAttribute("returnURL", request.getParameter("returnURL"));
 			return "/login";
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
-		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
-
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(globalSessionId);
-		tokenInfo.setUserId(Long.parseLong(globalSession.getId()));
-		tokenInfo.setUserName((String) globalSession.getAttribute("name"));
+		tokenInfo.setUserId(Long.parseLong((String)globalSession.getAttribute("password")));
+		tokenInfo.setUserName((String) globalSession.getAttribute("username"));
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
 
 		resultObj.put("tokenInfo", tokenInfo);
 		resultObj.put("returnURL", request.getParameter("returnURL"));
 
-		response.sendRedirect("http://localhost:8078/client/auth/check?tokenInfo=" + tokenInfo);
+		response.sendRedirect("http://localhost:8078/client/auth/check?token="
+		 + token  + "&returnURL="
+				 + request.getParameter("returnURL"));
 		return null;
 
 	}
@@ -109,8 +111,6 @@ public class SSOController {
 		tokenInfo.setUserName(user.getUserName());
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
-
-//		String aString = tokenUtil.getToken("6d813fc4-ae76-4d1c-9f59-7e64e83a400c", tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
 		 response.sendRedirect("http://localhost:8078/client/auth/check?token="
