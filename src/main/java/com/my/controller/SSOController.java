@@ -9,11 +9,8 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.fastjson.JSONObject;
 import com.my.dao.UsersJPA;
@@ -47,10 +44,8 @@ public class SSOController {
 	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
-		JSONObject resultObj = new JSONObject();
-		
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
-		
+
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
 
 		if (null == globalSessionId || globalSession == null) {
@@ -61,17 +56,13 @@ public class SSOController {
 		// 1.2 如果已经登录，则产生临时令牌token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(globalSessionId);
-		tokenInfo.setUserId(Long.parseLong((String)globalSession.getAttribute("password")));
+		tokenInfo.setUserId(Long.parseLong((String) globalSession.getAttribute("password")));
 		tokenInfo.setUserName((String) globalSession.getAttribute("username"));
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
 
-		resultObj.put("tokenInfo", tokenInfo);
-		resultObj.put("returnURL", request.getParameter("returnURL"));
-
-		response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		 + token  + "&returnURL="
-				 + request.getParameter("returnURL"));
+		response.sendRedirect("http://localhost:8078/client/auth/check?token=" + token + "&returnURL="
+				+ request.getParameter("returnURL"));
 		return null;
 
 	}
@@ -89,9 +80,8 @@ public class SSOController {
 	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
 	public void authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1、认证用户
-		 Users user =
-		 usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
-		 (String) request.getParameter("passWord"));
+		Users user = usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
+				(String) request.getParameter("passWord"));
 
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
@@ -113,13 +103,11 @@ public class SSOController {
 		tokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		 response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		 + token + "&returnURL="
-		 + request.getParameter("returnURL"));
+		response.sendRedirect("http://localhost:8078/client/auth/check?token=" + token + "&returnURL="
+				+ request.getParameter("returnURL"));
 		return;
 	}
 
-	
 	/*
 	 * 说明：登出接口处理两种情况，一是直接从认证中心登出，一是来自应用重定向的登出请求。这个根据gId来区分，无gId参数说明直接从认证中心注销，有，
 	 * 说明从应用中来。接口首先取消当前全局登录会话，其次根据注册的已登录应用，通知它们进行登出操作。上面登出时序交互图中的2和4与此接口有关。
