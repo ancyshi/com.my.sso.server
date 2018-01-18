@@ -53,6 +53,9 @@ public class SSOController2 {
 		
 		String tokenInfo = tokenUtil.getToken(token, null);
 		
+		// 验证完token就删除。
+		tokenUtil.delToken(token);
+		
 		return tokenInfo;
 	}
 

@@ -1,5 +1,7 @@
 package com.my.controller;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Resource;
@@ -68,10 +70,16 @@ public class SSOController {
 
 		resultObj.put("tokenInfo", tokenInfo);
 		resultObj.put("returnURL", request.getParameter("returnURL"));
+		
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("returnURL", request.getParameter("returnURL"));
+		map.put("token", token);
+		String redirectURL = ToolsUtil.addressAppend("localhost", "8078","/client/auth/check", map);
+		response.sendRedirect(redirectURL);
 
-		response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		 + token  + "&returnURL="
-				 + request.getParameter("returnURL"));
+//		response.sendRedirect("http://localhost:8078/client/auth/check?token="
+//		 + token  + "&returnURL="
+//				 + request.getParameter("returnURL"));
 		return null;
 
 	}
@@ -113,9 +121,15 @@ public class SSOController {
 		tokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-		 response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		 + token + "&returnURL="
-		 + request.getParameter("returnURL"));
+		
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("returnURL", request.getParameter("returnURL"));
+		map.put("token", token);
+		String redirectURL = ToolsUtil.addressAppend("localhost", "8078","/client/auth/check", map);
+		response.sendRedirect(redirectURL);
+//		 response.sendRedirect("http://localhost:8078/client/auth/check?token="
+//		 + token + "&returnURL="
+//		 + request.getParameter("returnURL"));
 		return;
 	}
 

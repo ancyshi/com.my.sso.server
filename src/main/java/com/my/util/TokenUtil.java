@@ -46,7 +46,8 @@ public class TokenUtil {
 
 	// 删除某个 token键值
 	@CacheEvict(key = "#tokenId", value = "tokenInfo")
-	public void delToken(String tokenId) {
+	public boolean delToken(String tokenId) {
+		return true;
 	}
 	
 //	// 存储临时令牌到redis中，存活期60秒
