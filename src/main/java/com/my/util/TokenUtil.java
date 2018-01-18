@@ -7,10 +7,8 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import redis.clients.jedis.Jedis;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.my.dao.TokenInfoJPA;
 import com.my.model.TokenInfo;
 
