@@ -49,8 +49,6 @@ public class SSOController {
 	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// 1.判定是否有GlobalSessionId并且合法
-		JSONObject resultObj = new JSONObject();
-		
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 		
 		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
@@ -68,8 +66,6 @@ public class SSOController {
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
 
-		resultObj.put("tokenInfo", tokenInfo);
-		resultObj.put("returnURL", request.getParameter("returnURL"));
 		
 		Map<String,Object> map = new HashMap<String,Object>();
 		map.put("returnURL", request.getParameter("returnURL"));
