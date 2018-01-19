@@ -4,9 +4,9 @@ import javax.servlet.http.HttpSession;
 
 public class MySession {
 
-	private String sessionIdStr;
+	public String sessionIdStr;
 
-	private HttpSession httpSession;
+	public HttpSession httpSession;
 
 	public String getSessionIdStr() {
 		return sessionIdStr;
@@ -23,7 +23,6 @@ public class MySession {
 	public void setHttpSession(HttpSession httpSession) {
 		this.httpSession = httpSession;
 	}
-	
 
 	public MySession() {
 		super();
@@ -35,5 +34,4 @@ public class MySession {
 		this.httpSession = httpSession;
 	}
 
-	
 }
