@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.fastjson.JSONObject;
 import com.my.dao.UsersJPA;
+import com.my.factory.AbstractFactory;
+import com.my.factory.GlobalSession;
+import com.my.factory.SessionFactory;
 import com.my.model.TokenInfo;
 import com.my.model.Users;
 import com.my.util.GlobalSessions;
@@ -36,6 +39,10 @@ public class SSOController {
 	private TokenUtil tokenUtil;
 
 	String token = UUID.randomUUID().toString();
+	
+	private AbstractFactory abstractFactory = new SessionFactory();
+	
+	private static Map<String, HttpSession> globalSessionMap = new HashMap<String, HttpSession>();
 
 	/*
 	 * 此接口主要接受来自应用系统的认证请求，此时，returnURL参数需加上，用以向认证中心标识是哪个应用系统，以及返回该应用的URL。
@@ -105,6 +112,11 @@ public class SSOController {
 		HttpSession session = request.getSession(true);
 		session.setAttribute("username", user.getUserName());
 		session.setAttribute("password", user.getPassWord());
+		
+		GlobalSession globalSession =  (GlobalSession) abstractFactory.generateAbstractSession(user,session);
+		
+		// 将globalSession 存入到map中
+		globalSessionMap.put(globalSession.getSessionIdStr(), globalSession.getHttpSession());
 
 		GlobalSessions.addSession(session.getId(), session);
 
