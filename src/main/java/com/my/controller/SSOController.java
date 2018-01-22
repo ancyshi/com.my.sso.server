@@ -42,8 +42,6 @@ public class SSOController {
 
 	private AbstractFactory abstractFactory = new SessionFactory();
 
-	private static Map<String, HttpSession> globalSessionMap = new HashMap<String, HttpSession>();
-
 	/*
 	 * 此接口主要接受来自应用系统的认证请求，此时，returnURL参数需加上，用以向认证中心标识是哪个应用系统，以及返回该应用的URL。
 	 * 如用户没有登录，应用中心向浏览器用户显示登录页面。 如已登录，则产生临时令牌token，并重定向回该系统。上面登录时序交互图中的2和此接口有关。
@@ -58,7 +56,7 @@ public class SSOController {
 		// 1.判定是否有GlobalSessionId并且合法
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
 
-		HttpSession globalSession = globalSessionMap.get(globalSessionId);
+		GlobalSession globalSession = globalSessionCache.cacheable(globalSessionId);
 
 		// HttpSession globalSession =
 		// GlobalSessions.getSession(globalSessionId);
@@ -70,9 +68,10 @@ public class SSOController {
 		}
 		// 1.2 如果已经登录，则产生临时令牌token
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalSessionId(globalSessionId);
-		tokenInfo.setUserId(Long.parseLong((String) globalSession.getAttribute("password")));
-		tokenInfo.setUserName((String) globalSession.getAttribute("username"));
+		tokenInfo.setGlobalSessionId(globalSession.getSessionIdStr());
+		// tokenInfo.setUserId(Long.parseLong((String)
+		// globalSession.getSessionIdStr()));
+		tokenInfo.setUserName(globalSession.getUserName());
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
 
