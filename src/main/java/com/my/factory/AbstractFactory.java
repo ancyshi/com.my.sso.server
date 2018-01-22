@@ -1,6 +1,5 @@
 package com.my.factory;
 
-import javax.servlet.http.HttpSession;
 
 /**
  * 抽象工厂
@@ -10,5 +9,5 @@ import javax.servlet.http.HttpSession;
  */
 public interface AbstractFactory {
 
-	public AbstractSession generateAbstractSession(String sesseionId, HttpSession session);
+	public AbstractSession generateAbstractSession();
 }

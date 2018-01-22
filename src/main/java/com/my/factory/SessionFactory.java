@@ -1,6 +1,5 @@
 package com.my.factory;
 
-import javax.servlet.http.HttpSession;
 
 /**
  * 具体工厂
@@ -11,8 +10,8 @@ import javax.servlet.http.HttpSession;
 public class SessionFactory implements AbstractFactory {
 
 	@Override
-	public AbstractSession generateAbstractSession(String sesseionId, HttpSession session) {
-		return new GlobalSession(sesseionId, session);
+	public AbstractSession generateAbstractSession() {
+		return new GlobalSession();
 	}
 
 }

@@ -1,6 +1,5 @@
 package com.my.factory;
 
-import javax.servlet.http.HttpSession;
 
 /**
  * 具体产品
@@ -8,43 +7,51 @@ import javax.servlet.http.HttpSession;
  * @author by_ww
  *
  */
-public class GlobalSession  implements AbstractSession {
-	public String sessionIdStr;
+public class GlobalSession implements AbstractSession {
+	private String sessionIdStr;
 
-	public HttpSession httpSession;
+	private String userName;
 
-	public String getSessionIdStr() {
-		return sessionIdStr;
+	private String passWord;
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getPassWord() {
+		return passWord;
+	}
+
+	public void setPassWord(String passWord) {
+		this.passWord = passWord;
 	}
 
 	public void setSessionIdStr(String sessionIdStr) {
 		this.sessionIdStr = sessionIdStr;
 	}
 
-	public HttpSession getHttpSession() {
-		return httpSession;
+	public String getSessionIdStr() {
+		return sessionIdStr;
 	}
-
-	public void setHttpSession(HttpSession httpSession) {
-		this.httpSession = httpSession;
-	}
-
 
 	public GlobalSession() {
 		super();
 	}
 
-	public GlobalSession(String sessionIdStr, HttpSession httpSession) {
+	public GlobalSession(String sessionIdStr, String userName, String passWord) {
 		super();
 		this.sessionIdStr = sessionIdStr;
-		this.httpSession = httpSession;
+		this.userName = userName;
+		this.passWord = passWord;
 	}
-
 
 	@Override
-	public GlobalSession generateSession(String sessionId, HttpSession session) {
-		// TODO Auto-generated method stub
-		return null;
+	public String toString() {
+		return "{\"sessionIdStr\":\"" + sessionIdStr + "\", \"userName\":\"" + userName + "\", \"passWord\":\""
+				+ passWord + "\"} ";
 	}
-
 }

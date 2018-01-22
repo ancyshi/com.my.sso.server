@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.alibaba.fastjson.JSONObject;
+import com.my.cache.GlobalSessionCache;
 import com.my.dao.UsersJPA;
 import com.my.factory.AbstractFactory;
 import com.my.factory.GlobalSession;
 import com.my.factory.SessionFactory;
 import com.my.model.TokenInfo;
 import com.my.model.Users;
-import com.my.util.GlobalSessions;
 import com.my.util.TokenUtil;
 import com.my.util.ToolsUtil;
 
@@ -34,6 +34,9 @@ public class SSOController {
 
 	@Resource
 	private TokenUtil tokenUtil;
+
+	@Resource
+	private GlobalSessionCache globalSessionCache;
 
 	String token = UUID.randomUUID().toString();
 
@@ -54,10 +57,11 @@ public class SSOController {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
-		
+
 		HttpSession globalSession = globalSessionMap.get(globalSessionId);
 
-//		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
+		// HttpSession globalSession =
+		// GlobalSessions.getSession(globalSessionId);
 
 		if (null == globalSessionId || globalSession == null) {
 			// 重定向之后会执行下面的语句，因此加个return
@@ -107,12 +111,19 @@ public class SSOController {
 		session.setAttribute("username", user.getUserName());
 		session.setAttribute("password", user.getPassWord());
 
-		GlobalSession globalSession = (GlobalSession) abstractFactory.generateAbstractSession(session.getId(), session);
+		// GlobalSession globalSession = (GlobalSession)
+		// abstractFactory.generateAbstractSession(session.getId(), session);
+		GlobalSession globalSession = (GlobalSession) abstractFactory.generateAbstractSession();
+		globalSession.setSessionIdStr(session.getId());
+		globalSession.setUserName(user.getUserName());
+		globalSession.setPassWord(user.getPassWord());
+		globalSessionCache.cachePut(session.getId(), globalSession);
 
 		// 将globalSession 存入到map中
-		globalSessionMap.put(globalSession.getSessionIdStr(), globalSession.getHttpSession());
+		// globalSessionMap.put(globalSession.getSessionIdStr(),
+		// globalSession.getHttpSession());
 
-//		GlobalSessions.addSession(session.getId(), session);
+		// GlobalSessions.addSession(session.getId(), session);
 
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
