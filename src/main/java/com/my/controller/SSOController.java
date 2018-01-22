@@ -54,8 +54,10 @@ public class SSOController {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
+		
+		HttpSession globalSession = globalSessionMap.get(globalSessionId);
 
-		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
+//		HttpSession globalSession = GlobalSessions.getSession(globalSessionId);
 
 		if (null == globalSessionId || globalSession == null) {
 			// 重定向之后会执行下面的语句，因此加个return
@@ -76,9 +78,6 @@ public class SSOController {
 		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", "/client/auth/check", map);
 		response.sendRedirect(redirectURL);
 
-		// response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		// + token + "&returnURL="
-		// + request.getParameter("returnURL"));
 		return null;
 
 	}
@@ -113,7 +112,7 @@ public class SSOController {
 		// 将globalSession 存入到map中
 		globalSessionMap.put(globalSession.getSessionIdStr(), globalSession.getHttpSession());
 
-		GlobalSessions.addSession(session.getId(), session);
+//		GlobalSessions.addSession(session.getId(), session);
 
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
@@ -130,9 +129,6 @@ public class SSOController {
 		map.put("token", token);
 		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", "/client/auth/check", map);
 		response.sendRedirect(redirectURL);
-		// response.sendRedirect("http://localhost:8078/client/auth/check?token="
-		// + token + "&returnURL="
-		// + request.getParameter("returnURL"));
 		return;
 	}
 
