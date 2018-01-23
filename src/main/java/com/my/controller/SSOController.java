@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.alibaba.fastjson.JSONObject;
+import com.my.cache.CookieCache;
 import com.my.cache.GlobalSessionCache;
 import com.my.dao.UsersJPA;
 import com.my.factory.AbstractFactory;
@@ -36,40 +37,31 @@ public class SSOController {
 	private TokenUtil tokenUtil;
 
 	@Resource
+	private CookieCache cookieCache;
+
+	@Resource
 	private GlobalSessionCache globalSessionCache;
 
 	String token = UUID.randomUUID().toString();
 
 	private AbstractFactory abstractFactory = new SessionFactory();
 
-	/*
-	 * 此接口主要接受来自应用系统的认证请求，此时，returnURL参数需加上，用以向认证中心标识是哪个应用系统，以及返回该应用的URL。
-	 * 如用户没有登录，应用中心向浏览器用户显示登录页面。 如已登录，则产生临时令牌token，并重定向回该系统。上面登录时序交互图中的2和此接口有关。
-	 * 
-	 * 当然，该接口也同时接受用户直接向认证中心登录，此时没有returnURL参数，认证中心直接返回登录页面
-	 * 
-	 * 这个接口是应用系统与认证中心之间的通信，作用 1、
-	 */
 	@RequestMapping(value = "/page/login", method = RequestMethod.GET)
 	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-		// 1.判定是否有GlobalSessionId并且合法
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
-		GlobalSession globalSession = null;
+		String cookieIdStr = "";
 		if (globalSessionId != null) {
-			
-			globalSession = globalSessionCache.cacheable(globalSessionId);
+			cookieIdStr = cookieCache.getCookie(globalSessionId);
 		}
 
-
-		// HttpSession globalSession =
-		// GlobalSessions.getSession(globalSessionId);
-
-		if (null == globalSessionId || globalSession == null) {
+		// 如果没有全局会话，或者已经登出了，就显示登录页面
+		if (null == globalSessionId || !cookieIdStr.equals("true")) {
 			// 重定向之后会执行下面的语句，因此加个return
 			model.addAttribute("returnURL", request.getParameter("returnURL"));
 			return "/login";
 		}
+		GlobalSession globalSession = globalSessionCache.cacheable(globalSessionId);
 		// 1.2 如果已经登录，则产生临时令牌token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(globalSession.getSessionIdStr());
@@ -88,22 +80,11 @@ public class SSOController {
 
 	}
 
-	/*
-	 * 说明： 处理浏览器用户登录认证请求。如带有returnURL参数，认证通过后，将产生临时认证令牌token，并携带此token重定向回系统。
-	 * 如没有带returnURL参数
-	 * ，说明用户是直接从认证中心发起的登录请求，认证通过后，返回认证中心首页提示用户已登录。上面登录时序交互图中的3和此接口有关。
-	 * 
-	 * 
-	 * 这里假设每个页面都带有returnURL,如果是登陆页面发送的请求那么携带主页面的url，否则携带app页面的url
-	 */
-	// 用户输入用户名和密码后，点击取人，发送请求到这个接口
-	// 这个接口就是登陆界面发送请求的接口，判定是否携带returnURL，如果携带则重定向回去，否则直接登陆主界面
 	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
 	public void authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// 1、认证用户
 		Users user = usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
 				(String) request.getParameter("passWord"));
-
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
 		}
@@ -113,8 +94,6 @@ public class SSOController {
 		session.setAttribute("username", user.getUserName());
 		session.setAttribute("password", user.getPassWord());
 
-		// GlobalSession globalSession = (GlobalSession)
-		// abstractFactory.generateAbstractSession(session.getId(), session);
 		GlobalSession globalSession = (GlobalSession) abstractFactory.generateAbstractSession();
 		globalSession.setSessionIdStr(session.getId());
 		globalSession.setUserName(user.getUserName());
@@ -122,22 +101,15 @@ public class SSOController {
 		globalSession.setPassWord(user.getPassWord());
 		globalSessionCache.cachePut(session.getId(), globalSession);
 
-		// 将globalSession 存入到map中
-		// globalSessionMap.put(globalSession.getSessionIdStr(),
-		// globalSession.getHttpSession());
-
-		// GlobalSessions.addSession(session.getId(), session);
-
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalSessionId(session.getId());
+		tokenInfo.setGlobalSessionId(globalSession.getSessionIdStr());
 		tokenInfo.setUserId(user.getId());
 		tokenInfo.setUserName(user.getUserName());
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
-
 		Map<String, Object> map = new HashMap<String, Object>();
 		map.put("returnURL", request.getParameter("returnURL"));
 		map.put("token", token);
@@ -146,10 +118,6 @@ public class SSOController {
 		return;
 	}
 
-	/*
-	 * 说明：登出接口处理两种情况，一是直接从认证中心登出，一是来自应用重定向的登出请求。这个根据gId来区分，无gId参数说明直接从认证中心注销，有，
-	 * 说明从应用中来。接口首先取消当前全局登录会话，其次根据注册的已登录应用，通知它们进行登出操作。上面登出时序交互图中的2和4与此接口有关。
-	 */
 	@RequestMapping(value = "/auth/logout")
 	public Long authLogout(JSONObject reqObj) throws Exception {
 		// 1.判定用户是否登录

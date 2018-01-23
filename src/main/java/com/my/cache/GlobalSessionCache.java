@@ -16,7 +16,7 @@ public class GlobalSessionCache {
 
 	public String cachePut(String sessionId, GlobalSession globalSession) throws Exception {
 		Jedis jedis = jedisPool.getResource();
-		jedis.setex(sessionId, 60, globalSession.toString());
+		jedis.set(sessionId, globalSession.toString());
 		return "true";
 	}
 
