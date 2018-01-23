@@ -13,6 +13,8 @@ public class GlobalSession implements AbstractSession {
 	private String userName;
 
 	private String passWord;
+	
+	private Long userId;
 
 	public String getUserName() {
 		return userName;
@@ -41,17 +43,30 @@ public class GlobalSession implements AbstractSession {
 	public GlobalSession() {
 		super();
 	}
+	
 
-	public GlobalSession(String sessionIdStr, String userName, String passWord) {
+	public Long getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+
+	
+	public GlobalSession(String sessionIdStr, String userName, String passWord,
+			Long userId) {
 		super();
 		this.sessionIdStr = sessionIdStr;
 		this.userName = userName;
 		this.passWord = passWord;
+		this.userId = userId;
 	}
 
 	@Override
 	public String toString() {
-		return "{\"sessionIdStr\":\"" + sessionIdStr + "\", \"userName\":\"" + userName + "\", \"passWord\":\""
-				+ passWord + "\"} ";
+		return "{\"sessionIdStr\":\"" + sessionIdStr + "\",\"userName\":\""
+				+ userName + "\",\"passWord\":\"" + passWord
+				+ "\",\"userId\":\"" + userId + "\"} ";
 	}
 }

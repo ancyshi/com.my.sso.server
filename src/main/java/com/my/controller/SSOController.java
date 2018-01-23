@@ -55,8 +55,12 @@ public class SSOController {
 
 		// 1.判定是否有GlobalSessionId并且合法
 		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
+		GlobalSession globalSession = null;
+		if (globalSessionId != null) {
+			
+			globalSession = globalSessionCache.cacheable(globalSessionId);
+		}
 
-		GlobalSession globalSession = globalSessionCache.cacheable(globalSessionId);
 
 		// HttpSession globalSession =
 		// GlobalSessions.getSession(globalSessionId);
@@ -69,8 +73,7 @@ public class SSOController {
 		// 1.2 如果已经登录，则产生临时令牌token
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setGlobalSessionId(globalSession.getSessionIdStr());
-		// tokenInfo.setUserId(Long.parseLong((String)
-		// globalSession.getSessionIdStr()));
+		tokenInfo.setUserId(globalSession.getUserId());
 		tokenInfo.setUserName(globalSession.getUserName());
 		tokenInfo.setSsoClient("ef");
 		tokenUtil.setToken(token, tokenInfo);
@@ -115,6 +118,7 @@ public class SSOController {
 		GlobalSession globalSession = (GlobalSession) abstractFactory.generateAbstractSession();
 		globalSession.setSessionIdStr(session.getId());
 		globalSession.setUserName(user.getUserName());
+		globalSession.setUserId(user.getId());
 		globalSession.setPassWord(user.getPassWord());
 		globalSessionCache.cachePut(session.getId(), globalSession);
 
