@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.my.util.SecurityUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -81,12 +82,13 @@ public class SSOController {
 	}
 
 	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
-	public void authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
-		// 1、认证用户
-		Users user = usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
-				(String) request.getParameter("passWord"));
+	public String authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+		// 1、把用户的信息解码后，认证用户
+		Users user = usersJPA.findByUserNameAndPassWord(SecurityUtils.getBase64(request.getParameter("userName")),
+				SecurityUtils.getBase64((String) request.getParameter("passWord")));
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
+			return "/register";
 		}
 
 		// 2、认证通过，产生全局的sessionId
@@ -115,7 +117,7 @@ public class SSOController {
 		map.put("token", token);
 		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", "/client/auth/check", map);
 		response.sendRedirect(redirectURL);
-		return;
+		return null;
 	}
 
 	@RequestMapping(value = "/auth/logout")
@@ -127,5 +129,15 @@ public class SSOController {
 		// 1.2 如果已经登录，则产生临时令牌token,并重定向回应用系统
 
 		return null;
+	}
+
+	@RequestMapping(value = "/register",method = RequestMethod.POST)
+	public String register(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Users user = new Users();
+		user.setUserName(SecurityUtils.getBase64(user.getUserName()));
+		user.setPassWord(SecurityUtils.getBase64( user.getPassWord()));
+		user.setId(System.currentTimeMillis());
+		usersJPA.save(user);
+		return "/login";
 	}
 }

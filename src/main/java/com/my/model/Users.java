@@ -1,12 +1,10 @@
 package com.my.model;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 
 @Entity
@@ -24,6 +22,9 @@ public class Users implements Serializable{
 	private String userName;
 	@Column(name = "pass_word")
 	private String passWord;
+	@OneToMany(cascade=CascadeType.ALL,fetch=FetchType.LAZY)
+	@JoinColumn(name="users_id",referencedColumnName="id")//在cookieId表增加一个外键列来实现一对多的单向关联
+	private Set<CookieId> cookieIds = new HashSet<CookieId>();
 	
 	public Long getId() {
 		return id;
@@ -42,5 +43,13 @@ public class Users implements Serializable{
 	}
 	public void setPassWord(String passWord) {
 		this.passWord = passWord;
+	}
+
+	public Set<CookieId> getCookieIds() {
+		return cookieIds;
+	}
+
+	public void setCookieIds(Set<CookieId> cookieIds) {
+		this.cookieIds = cookieIds;
 	}
 }
