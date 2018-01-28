@@ -1,14 +1,13 @@
 package com.my.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.my.model.CookieId;
 import com.my.util.SecurityUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,9 +37,6 @@ public class SSOController {
 	private TokenUtil tokenUtil;
 
 	@Resource
-	private CookieCache cookieCache;
-
-	@Resource
 	private GlobalSessionCache globalSessionCache;
 
 	String token = UUID.randomUUID().toString();
@@ -50,18 +46,13 @@ public class SSOController {
 	@RequestMapping(value = "/page/login", method = RequestMethod.GET)
 	public String pageLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
-		String cookieIdStr = "";
-		if (globalSessionId != null) {
-			cookieIdStr = cookieCache.getCookie(globalSessionId);
+		if (request.getAttribute("globalSessionIdCheck") != null && request.getAttribute("globalSessionIdCheck") .equals("false")) {
+			model.addAttribute("returnURL",request.getParameter("returnURL"));
+				return "/login";
 		}
 
-		// 如果没有全局会话，或者已经登出了，就显示登录页面
-		if (null == globalSessionId || !cookieIdStr.equals("true")) {
-			// 重定向之后会执行下面的语句，因此加个return
-			model.addAttribute("returnURL", request.getParameter("returnURL"));
-			return "/login";
-		}
+		String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
+
 		GlobalSession globalSession = globalSessionCache.cacheable(globalSessionId);
 		// 1.2 如果已经登录，则产生临时令牌token
 		TokenInfo tokenInfo = new TokenInfo();
@@ -72,20 +63,18 @@ public class SSOController {
 		tokenUtil.setToken(token, tokenInfo);
 
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("returnURL", request.getParameter("returnURL"));
 		map.put("token", token);
-		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", "/client/auth/check", map);
+		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", request.getParameter("returnURL"), map);
 		response.sendRedirect(redirectURL);
-
 		return null;
 
 	}
 
-	@RequestMapping(value = "/auth/login", method = RequestMethod.POST)
+	@RequestMapping(value = "/auth/login",method = RequestMethod.POST)
 	public String authLogin(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
-		// 1、把用户的信息解码后，认证用户
-		Users user = usersJPA.findByUserNameAndPassWord(SecurityUtils.getBase64(request.getParameter("userName")),
-				SecurityUtils.getBase64((String) request.getParameter("passWord")));
+
+		Users user = usersJPA.findByUserNameAndPassWord(request.getParameter("userName"),
+				(String) request.getParameter("passWord"));
 		if (user == null) {
 			// 没有注册过的用户，显示注册界面
 			return "/register";
@@ -96,6 +85,7 @@ public class SSOController {
 		session.setAttribute("username", user.getUserName());
 		session.setAttribute("password", user.getPassWord());
 
+		// 这部分可以不要了
 		GlobalSession globalSession = (GlobalSession) abstractFactory.generateAbstractSession();
 		globalSession.setSessionIdStr(session.getId());
 		globalSession.setUserName(user.getUserName());
@@ -103,9 +93,15 @@ public class SSOController {
 		globalSession.setPassWord(user.getPassWord());
 		globalSessionCache.cachePut(session.getId(), globalSession);
 
+		Set<CookieId> cookieIds = new HashSet<CookieId>();
+		CookieId globalCookieId = new CookieId();
+		globalCookieId.setCookiesId(session.getId());
+		cookieIds.add(globalCookieId);
+		user.setCookieIds(cookieIds);
+
 		// 产生临时的token
 		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setGlobalSessionId(globalSession.getSessionIdStr());
+		tokenInfo.setGlobalSessionId(session.getId());
 		tokenInfo.setUserId(user.getId());
 		tokenInfo.setUserName(user.getUserName());
 		tokenInfo.setSsoClient("ef");
@@ -113,9 +109,9 @@ public class SSOController {
 
 		// 3、如果携带了returnURL,那么就重定向，否则返回主页面
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("returnURL", request.getParameter("returnURL"));
+//		map.put("returnURL","app1");
 		map.put("token", token);
-		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", "/client/auth/check", map);
+		String redirectURL = ToolsUtil.addressAppend("localhost", "8078", request.getParameter("returnURL"), map);
 		response.sendRedirect(redirectURL);
 		return null;
 	}

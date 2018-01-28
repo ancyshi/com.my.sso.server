@@ -1,42 +1,47 @@
 package com.my.controller;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import com.alibaba.fastjson.JSONObject;
+import com.my.cache.CookieCache;
+import com.my.dao.UsersJPA;
+import com.my.model.CookieId;
+import com.my.model.Users;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.my.util.GlobalSessions;
 
 @RestController
-@RequestMapping(value = "/app")
+@RequestMapping(value = "/oneToMany")
 public class APPController {
+	@Resource
+	private UsersJPA usersJPA;
 
-	@RequestMapping(value = "/login")
-	public String pageLogin(HttpServletRequest request) throws Exception {
-		// 1.判定用户是否登录,这里解决了图中1过程，
-		// 这里应该是局部session
-		HttpSession session = request.getSession();
-		if (session == null) {
-			// 直接重定向到登录界面/page/login，图中的2
-			redictToServer(request);
-		}
-		// 如果有session，判断是否合法
-		if (GlobalSessions.getSession(session.getId()) == null) {
-			// 不合法的话重定向到登录界面
-			redictToServer(request);
-		}
+	@Resource
+	private CookieCache cookieCache;
 
-		// 如果有session，那么要判断session是否合法,/auth/verify
+	@RequestMapping(value = "/query")
+	public String pageLogin(@RequestBody JSONObject reqObject) throws Exception {
 
-		// 合法的话直接跳到page1
-		
-		return "/LoginHtml";
-
+		Users user = usersJPA.findByUserNameAndPassWord(reqObject.getString("userName"),reqObject.getString("passWord"));
+		return user.toString();
 
 	}
+	@RequestMapping(value = "/redis")
+	public Object redis(@RequestBody JSONObject record) throws Exception {
 
-	private void redictToServer(HttpServletRequest request) {
+		// 产生临时的token
+		CookieId localCookieId = new CookieId();
+		localCookieId.setCookiesId("afefefe1");
+		cookieCache.jedisSAdd("fe", localCookieId.getCookiesId());
+
+		// cookieCache.delete("fe");
+
+		return localCookieId.getCookiesId();
 
 	}
 

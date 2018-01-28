@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.alibaba.fastjson.JSON;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -50,13 +51,18 @@ public class SSOController2 {
 		}
 
 		// 2、认证token是否有效
-		
 		String tokenInfo = tokenUtil.getToken(token, null);
 		
 		// 验证完token就删除。
 		tokenUtil.delToken(token);
-		
-		return tokenInfo;
+		JSONObject tokenInfoObj =  new JSONObject();
+		if (!tokenInfo.isEmpty()) {
+			tokenInfoObj = JSON.parseObject(tokenInfo);
+			tokenInfoObj.put("verifyResult","true");
+		} else {
+			tokenInfoObj.put("verifyResult","false");
+		}
+		return tokenInfoObj;
 	}
 
 	

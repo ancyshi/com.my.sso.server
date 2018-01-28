@@ -52,4 +52,19 @@ public class Users implements Serializable{
 	public void setCookieIds(Set<CookieId> cookieIds) {
 		this.cookieIds = cookieIds;
 	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder("{");
+		sb.append("\"id\":")
+				.append(id);
+		sb.append(",\"userName\":\"")
+				.append(userName).append('\"');
+		sb.append(",\"passWord\":\"")
+				.append(passWord).append('\"');
+		sb.append(",\"cookieIds\":")
+				.append(cookieIds);
+		sb.append('}');
+		return sb.toString();
+	}
 }

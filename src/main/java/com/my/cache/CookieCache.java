@@ -62,4 +62,11 @@ public class CookieCache {
 
 	}
 
+	// 存储集合
+	public void jedisSAdd(String globalSessionId, String localSessionIdStr) {
+		Jedis jedis = jedisPool.getResource();
+		jedis.sadd(globalSessionId, localSessionIdStr);
+		return;
+	}
+
 }
