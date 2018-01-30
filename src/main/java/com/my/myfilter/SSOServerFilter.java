@@ -1,8 +1,11 @@
 package com.my.myfilter;
 
+import com.my.cache.CookieCache;
+import com.my.model.CookieId;
 import com.my.util.ToolsUtil;
 import org.springframework.core.annotation.Order;
 
+import javax.annotation.Resource;
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServlet;
@@ -19,6 +22,9 @@ import java.util.Map;
 //重点
 @WebFilter(filterName = "ssoServerFilter", urlPatterns ={ "/server/page/login"})
 public class SSOServerFilter  extends HttpServlet implements Filter {
+    @Resource
+    private CookieCache cookieCache;
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
 
@@ -31,14 +37,20 @@ public class SSOServerFilter  extends HttpServlet implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
         String globalSessionId = ToolsUtil.getCookieValueByName(request, "globalSessionId");
-        if (globalSessionId == null && !this.verifyGlobalSession(globalSessionId)) {
+        if (globalSessionId != null && !this.verifyGlobalSession(globalSessionId)) {
+            request.setAttribute("globalSessionIdCheck","false");
+        } else if (globalSessionId == null  ) {
             request.setAttribute("globalSessionIdCheck","false");
         }
             chain.doFilter(request,  response);
     }
 
     private boolean verifyGlobalSession(String globalSessionId) {
-        return  false;
+        CookieId cookieId =    cookieCache.getCookie(globalSessionId);
+        if (cookieId != null ) {
+            return true;
+        }
+        return false;
     }
 
 }

@@ -22,7 +22,7 @@ public class Users implements Serializable{
 	private String userName;
 	@Column(name = "pass_word")
 	private String passWord;
-	@OneToMany(cascade=CascadeType.ALL,fetch=FetchType.LAZY)
+	@OneToMany(cascade=CascadeType.ALL,fetch=FetchType.EAGER)
 	@JoinColumn(name="users_id",referencedColumnName="id")//在cookieId表增加一个外键列来实现一对多的单向关联
 	private Set<CookieId> cookieIds = new HashSet<CookieId>();
 	

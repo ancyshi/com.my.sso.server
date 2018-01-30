@@ -29,14 +29,9 @@ public class CookieCache {
 	}
 
 //	@Cacheable(value = "cookie", key = "#cookieId")
-	public String getCookie(String cookieId) throws Exception {
-		CookieId cookie = cookieIdJPA.findOne(cookieId);
-		if (null != cookie) {
-			return "true";
-		} else {
-			return "false";
-		}
-//		return cookie.getCookiesId();
+	public CookieId getCookie(String cookieId)  {
+		CookieId cookie = cookieIdJPA.jpaFindOne(cookieId);
+	   return	cookie;
 	}
 
 	// @CachePut(key = "#key", value = "cookie")
